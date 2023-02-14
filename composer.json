@@ -1,0 +1,22 @@
+{
+	"type": "project",
+	"name": "dionysopoulos/toggle-dark",
+	"description": "Toggle KDE Plasma light / dark mode",
+	"authors": [
+		{
+			"name": "Nicholas K. Dionysopoulos",
+			"role": "Developer",
+			"homepage": "https://www.dionysopoulos.me"
+		}
+	],
+	"require": {
+		"php": "^8.0",
+		"mnapoli/silly": "^1.8",
+		"tiben/crontab-manager": "^1.0"
+	},
+	"autoload": {
+		"psr-4": {
+			"Dionysopoulos\\ToggleDark\\": "src"
+		}
+	}
+}

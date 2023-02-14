@@ -1,0 +1,7 @@
+{
+	"main": "toggle-dark.php",
+	"output": "release/toggle-dark.phar",
+	"chmod": "0755",
+	"compression": "GZ",
+	"algorithm": "SHA512"
+}
