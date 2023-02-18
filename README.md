@@ -12,6 +12,28 @@ chown +x toggle-dark.phar
 sudo cp toggle-dark.phar /usr/local/bin/toggle-dark
 ```
 
+This does not take into account two use cases where a toggle between the dark and light theme is necessary:
+
+* Suspending your computer after sunset and resuming it after dawn (or suspending after dawn and resuming after sunset).
+* Suspending your computer between noon and midnight and resuming it after dawn.
+
+To address these problems you need to have the Toggle Dark update to run on Plasma login and screen unlocking.
+
+* Go to System Settings, Notifications and click on Configure next to Applications.
+* Click on Plasma Workspace
+* Click on Configure Events
+* Select Login
+* Check the Run Command checkbox and enter `/usr/local/bin/toggle-dark update` in the text box next to it.
+* Click on OK
+* Click on Screen Saver
+* Click on Configure Events
+* Select Screen Unlocked
+* Check the Run Command checkbox and enter `/usr/local/bin/toggle-dark update` in the text box next to it.
+* Click on OK
+* Click on Apply
+
+This will allow the dark/light theme to toggle even in the two use cases explained above.
+
 ## Usage
 
 This tool can be used to toggle between a Light and Dark global Plasma theme based on the sunrise and sunset.
