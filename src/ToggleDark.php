@@ -142,33 +142,7 @@ class ToggleDark
 	 */
 	public function updateCRON(): void
 	{
-		$coordinates = $this->getCoordinates();
-
-		extract($coordinates);
-
-		if ($latitude === null || $longitude === null)
-		{
-			$latitude  = ini_get('date.default_latitude') ?: $this->config->defaultLat;
-			$longitude = ini_get('date.default_longitude') ?: $this->config->defaultLon;
-		}
-
-		$currentTime      = time();
-		$info             = date_sun_info($currentTime, $latitude, $longitude);
-		$sunriseTimestamp = $this->config->useCivicTwilight
-			? $info['civil_twilight_begin']
-			: $info['sunrise'];
-		$sunsetTiemstamp  = $this->config->useCivicTwilight
-			? $info['civil_twilight_end']
-			: $info['sundown'];
-
-		// Creating DateTime objects from timestamps always uses the GMT timezone, regardless of the third argument.
-		$gmt     = new DateTimeZone('GMT');
-		$sunrise = \DateTime::createFromFormat('U', $sunriseTimestamp, $gmt);
-		$sunset  = \DateTime::createFromFormat('U', $sunsetTiemstamp, $gmt);
-
-		// Force the DateTime objects to be expressed in the host's timezone
-		$sunrise->setTimezone($this->getSystemTimezone());
-		$sunset->setTimezone($this->getSystemTimezone());
+		[$sunrise, $sunset] = $this->getSunriseSunsetTime();
 
 		$commandProto = PHP_BINARY . ' ' . TOGGLE_DARK_SELF . ' %s';
 
@@ -176,18 +150,18 @@ class ToggleDark
 			->setMinutes($sunrise->format('i'))
 			->setHours($sunrise->format('H'))
 			->setDayOfMonth($sunrise->format('d'))
-			->setMonths($sunrise->format('m'))
-			->setDayOfWeek($sunrise->format('w'))
-			->setTaskCommandLine(sprintf($commandProto, 'light'))
+			->setMonths($sunrise->format('n'))
+			->setDayOfWeek('*')
+			->setTaskCommandLine(sprintf($commandProto, 'update'))
 			->setComments('Toggle Dark -- Sunrise');
 
 		$cronJobSunset = (new CrontabJob())
 			->setMinutes($sunset->format('i'))
 			->setHours($sunset->format('H'))
 			->setDayOfMonth($sunset->format('d'))
-			->setMonths($sunset->format('m'))
-			->setDayOfWeek($sunset->format('w'))
-			->setTaskCommandLine(sprintf($commandProto, 'dark'))
+			->setMonths($sunset->format('n'))
+			->setDayOfWeek('*')
+			->setTaskCommandLine(sprintf($commandProto, 'update'))
 			->setComments('Toggle Dark -- Sunset');
 
 		$cronJobCronUpdate = (new CrontabJob())
@@ -458,5 +432,53 @@ INI;
 		{
 			return new DateTimeZone('GMT');
 		}
+	}
+
+	/**
+	 * Get the sunrise and sunset time of a given day.
+	 *
+	 * @param   int|null  $targetTimestamp  The timestamp of the day we're interested in. NULL = today.
+	 *
+	 * @return  array
+	 */
+	private function getSunriseSunsetTime(?int $targetTimestamp = null): array
+	{
+		$coordinates = $this->getCoordinates();
+
+		/**
+		 * Extracted variables
+		 *
+		 * @var ?int $latitude  The latitude of the current location
+		 * @var ?int $longitude The longitude of the current location
+		 */
+		extract($coordinates);
+
+		if ($latitude === null || $longitude === null)
+		{
+			$latitude  = ini_get('date.default_latitude') ?: $this->config->defaultLat;
+			$longitude = ini_get('date.default_longitude') ?: $this->config->defaultLon;
+		}
+
+		// TODO Add/remove a fixed amount of time
+
+		$targetTimestamp  ??= time();
+		$info             = date_sun_info($targetTimestamp, $latitude, $longitude);
+		$sunriseTimestamp = $this->config->useCivicTwilight
+			? $info['civil_twilight_begin']
+			: $info['sunrise'];
+		$sunsetTimestamp  = $this->config->useCivicTwilight
+			? $info['civil_twilight_end']
+			: $info['sundown'];
+
+		// Creating DateTime objects from timestamps always uses the GMT timezone, regardless of the third argument.
+		$gmt     = new DateTimeZone('GMT');
+		$sunrise = \DateTime::createFromFormat('U', $sunriseTimestamp, $gmt);
+		$sunset  = \DateTime::createFromFormat('U', $sunsetTimestamp, $gmt);
+
+		// Force the DateTime objects to be expressed in the host's timezone
+		$sunrise->setTimezone($this->getSystemTimezone());
+		$sunset->setTimezone($this->getSystemTimezone());
+
+		return [$sunrise, $sunset];
 	}
 }

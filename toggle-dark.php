@@ -56,7 +56,9 @@ $app->command(
 $app->command(
 	'update',
 	function (OutputInterface $output) {
-		(new ToggleDark())->updateCRON();
+		$toggleDark = new ToggleDark();
+		$toggleDark->updateCRON();
+		$toggleDark->autoToggleTheme();
 		$output->writeln('Updated CRON jobs.');
 	}
 )->descriptions('Install or update the CRON jobs to auto-switch the global theme');
