@@ -70,7 +70,7 @@ To switch to the Light or Dark theme according to the sunrise and sunset times j
 toggle-dark autotoggle
 ```
 
-This is called _semi_-automatic mode because you need to run this command youself; it does not run automatically.
+This is called _semi_-automatic mode because you need to run this command yourself; it does not run automatically.
 
 ### Automatic switching
 
