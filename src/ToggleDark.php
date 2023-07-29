@@ -94,9 +94,10 @@ class ToggleDark
 	 */
 	public function toggleTheme(): void
 	{
-		$currentTheme = $this->getCurrentTheme();
+		$currentTheme     = $this->getCurrentTheme();
+		$isCurrerntlyDark = $currentTheme === $this->config->darkTheme;
 
-		$bestTheme = ($currentTheme === $this->config->darkTheme)
+		$bestTheme = $isCurrerntlyDark
 			? $this->config->lightTheme
 			: $this->config->darkTheme;
 
@@ -104,6 +105,13 @@ class ToggleDark
 		$command     = sprintf('/usr/bin/lookandfeeltool -a %s %s', $resetLayout, $bestTheme);
 
 		exec($command);
+
+		exec(
+			sprintf(
+				'gsettings set org.gnome.desktop.interface color-scheme \'%s\'',
+				$isCurrerntlyDark ? 'prefer-light' : 'prefer-dark'
+			)
+		);
 	}
 
 	/**
@@ -118,6 +126,8 @@ class ToggleDark
 		$command     = sprintf('/usr/bin/lookandfeeltool -a %s %s', $resetLayout, $this->config->darkTheme);
 
 		exec($command);
+
+		exec('gsettings set org.gnome.desktop.interface color-scheme \'prefer-dark\'');
 	}
 
 	/**
@@ -132,6 +142,8 @@ class ToggleDark
 		$command     = sprintf('/usr/bin/lookandfeeltool -a %s %s', $resetLayout, $this->config->lightTheme);
 
 		exec($command);
+
+		exec('gsettings set org.gnome.desktop.interface color-scheme \'prefer-light\'');
 	}
 
 	/**
