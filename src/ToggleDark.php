@@ -152,7 +152,7 @@ class ToggleDark
 			->setDayOfMonth($sunrise->format('d'))
 			->setMonths($sunrise->format('n'))
 			->setDayOfWeek('*')
-			->setTaskCommandLine(sprintf($commandProto, 'update'))
+			->setTaskCommandLine(sprintf($commandProto, 'light'))
 			->setComments('Toggle Dark -- Sunrise');
 
 		$cronJobSunset = (new CrontabJob())
@@ -161,12 +161,12 @@ class ToggleDark
 			->setDayOfMonth($sunset->format('d'))
 			->setMonths($sunset->format('n'))
 			->setDayOfWeek('*')
-			->setTaskCommandLine(sprintf($commandProto, 'update'))
+			->setTaskCommandLine(sprintf($commandProto, 'dark'))
 			->setComments('Toggle Dark -- Sunset');
 
 		$cronJobCronUpdate = (new CrontabJob())
-			->setMinutes(0)
-			->setHours('*/1')
+			->setMinutes('*/15')
+			->setHours('*')
 			->setDayOfMonth('*')
 			->setMonths('*')
 			->setDayOfWeek('*')
@@ -468,7 +468,7 @@ INI;
 			: $info['sunrise'];
 		$sunsetTimestamp  = $this->config->useCivicTwilight
 			? $info['civil_twilight_end']
-			: $info['sundown'];
+			: $info['sunset'];
 
 		// Creating DateTime objects from timestamps always uses the GMT timezone, regardless of the third argument.
 		$gmt     = new DateTimeZone('GMT');
