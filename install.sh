@@ -45,6 +45,4 @@ chmod +x release/toggle-dark.phar
 echo "Toggle Dark will be copied to /usr/local/bin/toggle-dark. Your root password is required for this."
 sudo cp release/toggle-dark.phar /usr/local/bin/toggle-dark
 
-yes_or_no "Would you like to install the CRON job?" && toggle-dark update
-
 yes_or_no "Would you like to run the auto-toggle now?" && toggle-dark

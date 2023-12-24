@@ -16,19 +16,12 @@ $app->command(
 
 		if ($toggled)
 		{
-			$output->writeln('Toggled Plasma theme.');
+			$output->writeln('Toggled Plasma colour scheme.');
 		}
 
-		$output->writeln('No need to toggle the Plasma theme.');
+		$output->writeln('No need to toggle the Plasma colour scheme.');
 	}
 )->descriptions('Toggle dark/light global theme based on sunrise/sunset');
-
-$app->command(
-	'toggle',
-	function (OutputInterface $output) {
-		(new ToggleDark())->toggleTheme();
-	}
-)->descriptions('Toggle between the dark and light global theme');
 
 $app->command(
 	'dark',
@@ -43,33 +36,6 @@ $app->command(
 		(new ToggleDark())->forceLight();
 	}
 )->descriptions('Applies the light theme');
-
-$app->command(
-	'current',
-	function (OutputInterface $output) {
-		$current = (new ToggleDark())->getCurrentTheme();
-
-		$output->writeln($current);
-	}
-)->descriptions('Print the current global theme identifier');
-
-$app->command(
-	'update',
-	function (OutputInterface $output) {
-		$toggleDark = new ToggleDark();
-		$toggleDark->updateCRON();
-		$toggleDark->autoToggleTheme();
-		$output->writeln('Updated CRON jobs.');
-	}
-)->descriptions('Install or update the CRON jobs to auto-switch the global theme');
-
-$app->command(
-	'uninstall',
-	function (OutputInterface $output) {
-		(new ToggleDark())->uninstallCRON();
-		$output->writeln('Removed CRON jobs.');
-	}
-)->descriptions('Remove the CRON jobs to auto-switch the global theme');
 
 call_user_func(function (){
 	$self = __FILE__;

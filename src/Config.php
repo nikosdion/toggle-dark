@@ -25,9 +25,8 @@ namespace Dionysopoulos\ToggleDark;
 /**
  * Configuration handling
  *
- * @property string $darkTheme        Dark global theme identifier
- * @property string $lightTheme       Light global theme identifier
- * @property bool   $resetLayout      Should the global theme reset the layout (also applies wallpaper)?
+ * @property string $darkScheme       Dark KDE colour scheme identifier
+ * @property string $lightScheme      Light KDE colour scheme theme identifier
  * @property bool   $useGeoIP         Should I use GeoIP?
  * @property int    $cacheLifetime    Cache lifetime for GeoIP, in hours
  * @property float  $defaultLon       Default longitude
@@ -46,13 +45,11 @@ class Config
 
 	private bool $useCivicTwilight = true;
 
-	private string $darkTheme = 'org.kde.breezedark.desktop';
+	private string $darkScheme = 'BreezeLight';
 
-	private string $lightTheme = 'org.kde.breeze.desktop';
+	private string $lightScheme = 'BreezeDark';
 
 	private int $cacheLifetime = 6;
-
-	private bool $resetLayout = false;
 
 	private const CONFIG_FILE = 'toggle-dark';
 
@@ -83,10 +80,9 @@ class Config
 		$this->defaultLon       = floatval($config['longitude'] ?? $this->defaultLon);
 		$this->defaultLat       = floatval($config['latitude'] ?? $this->defaultLat);
 		$this->useCivicTwilight = boolval($config['civic_twilight'] ?? $this->useCivicTwilight);
-		$this->darkTheme        = $config['dark_theme'] ?? $this->darkTheme;
-		$this->lightTheme       = $config['light_theme'] ?? $this->lightTheme;
+		$this->darkScheme        = $config['dark_scheme'] ?? $this->darkScheme;
+		$this->lightScheme       = $config['light_scheme'] ?? $this->lightScheme;
 		$this->cacheLifetime    = $config['cache_lifetime'] ?? $this->cacheLifetime;
-		$this->resetLayout      = $config['reset_layout'] ?? $this->resetLayout;
 	}
 
 	public function save(): void
@@ -94,11 +90,9 @@ class Config
 		$file          = $_SERVER['HOME'] . '/.config/' . self::CONFIG_FILE;
 		$geoIP         = $this->useGeoIP ? '1' : '0';
 		$civicTwilight = $this->useCivicTwilight ? '1' : '0';
-		$resetLayout   = $this->resetLayout ? '1' : '0';
 		$document      = <<< INI
-dark_theme={$this->darkTheme}
-light_theme={$this->lightTheme}
-reset_layout={$resetLayout}
+dark_scheme={$this->darkScheme}
+light_scheme={$this->lightScheme}
 geoip={$geoIP}
 cache_lifetime={$this->cacheLifetime}
 longitude={$this->defaultLon}

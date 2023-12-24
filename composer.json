@@ -11,8 +11,7 @@
 	],
 	"require": {
 		"php": "^8.0",
-		"mnapoli/silly": "^1.8",
-		"tiben/crontab-manager": "^1.0"
+		"mnapoli/silly": "^1.8"
 	},
 	"autoload": {
 		"psr-4": {

@@ -23,11 +23,8 @@
 
 namespace Dionysopoulos\ToggleDark;
 
-use DateTimeZone;
+use JetBrains\PhpStorm\ArrayShape;
 use JsonException;
-use TiBeN\CrontabManager\CrontabAdapter;
-use TiBeN\CrontabManager\CrontabJob;
-use TiBeN\CrontabManager\CrontabRepository;
 
 /**
  * KDE Plasma Light / Dark Mode Toggle
@@ -46,23 +43,6 @@ class ToggleDark
 	}
 
 	/**
-	 * Returns the identifier of the currently active Plasma theme
-	 *
-	 * @return  string
-	 * @since   1.0.0
-	 */
-	public function getCurrentTheme(): string
-	{
-		[$theme,] = explode(
-			"\n",
-			@file_get_contents($_SERVER['HOME'] . '/.config/kdedefaults/package') ?: '',
-			2
-		);
-
-		return $theme;
-	}
-
-	/**
 	 * Toggle the Plasma theme, if necessary
 	 *
 	 * @return  bool  True if switching themes took place
@@ -70,48 +50,23 @@ class ToggleDark
 	 */
 	public function autoToggleTheme(): bool
 	{
-		$currentTheme = $this->getCurrentTheme();
-		$bestTheme    = $this->getBestTheme();
+		$currentScheme = $this->getCurrentScheme();
+		$bestScheme    = $this->getBestScheme();
 
-		if ($currentTheme === $bestTheme)
+		if ($currentScheme === $bestScheme)
 		{
 			return false;
 		}
 
-		$resetLayout = $this->config->resetLayout ? '--resetLayout' : '';
-		$command     = sprintf('/usr/bin/lookandfeeltool -a %s %s', $resetLayout, $bestTheme);
+		$command     = sprintf(
+			'%s %s',
+			escapeshellcmd('/usr/bin/plasma-apply-colorscheme'),
+			escapeshellarg($bestScheme)
+		);
 
 		exec($command);
 
 		return true;
-	}
-
-	/**
-	 * Toggle the Plasma theme, always
-	 *
-	 * @return  void
-	 * @since   1.0.0
-	 */
-	public function toggleTheme(): void
-	{
-		$currentTheme     = $this->getCurrentTheme();
-		$isCurrerntlyDark = $currentTheme === $this->config->darkTheme;
-
-		$bestTheme = $isCurrerntlyDark
-			? $this->config->lightTheme
-			: $this->config->darkTheme;
-
-		$resetLayout = $this->config->resetLayout ? '--resetLayout' : '';
-		$command     = sprintf('/usr/bin/lookandfeeltool -a %s %s', $resetLayout, $bestTheme);
-
-		exec($command);
-
-		exec(
-			sprintf(
-				'gsettings set org.gnome.desktop.interface color-scheme \'%s\'',
-				$isCurrerntlyDark ? 'prefer-light' : 'prefer-dark'
-			)
-		);
 	}
 
 	/**
@@ -122,12 +77,15 @@ class ToggleDark
 	 */
 	public function forceDark(): void
 	{
-		$resetLayout = $this->config->resetLayout ? '--resetLayout' : '';
-		$command     = sprintf('/usr/bin/lookandfeeltool -a %s %s', $resetLayout, $this->config->darkTheme);
+		$command     = sprintf(
+			'%s %s',
+			escapeshellcmd('/usr/bin/plasma-apply-colorscheme'),
+			escapeshellarg($this->config->darkScheme)
+		);
 
 		exec($command);
 
-		exec('gsettings set org.gnome.desktop.interface color-scheme \'prefer-dark\'');
+		//exec('gsettings set org.gnome.desktop.interface color-scheme \'prefer-dark\'');
 	}
 
 	/**
@@ -138,8 +96,11 @@ class ToggleDark
 	 */
 	public function forceLight(): void
 	{
-		$resetLayout = $this->config->resetLayout ? '--resetLayout' : '';
-		$command     = sprintf('/usr/bin/lookandfeeltool -a %s %s', $resetLayout, $this->config->lightTheme);
+		$command     = sprintf(
+			'%s %s',
+			escapeshellcmd('/usr/bin/plasma-apply-colorscheme'),
+			escapeshellarg($this->config->lightScheme)
+		);
 
 		exec($command);
 
@@ -147,69 +108,17 @@ class ToggleDark
 	}
 
 	/**
-	 * Update the theme auto-switch CRON job
+	 * Returns the name of the currently active Plasma colour scheme
 	 *
-	 * @return  void
+	 * @return  string
 	 * @since   1.0.0
 	 */
-	public function updateCRON(): void
+	private function getCurrentScheme(): string
 	{
-		[$sunrise, $sunset] = $this->getSunriseSunsetTime();
+		$filePath = $_SERVER['HOME'] . '/.config/kdedefaults/kdeglobals';
+		$items    = @parse_ini_file($filePath, false) ?: [];
 
-		$commandProto = PHP_BINARY . ' ' . TOGGLE_DARK_SELF . ' %s';
-
-		$cronJobSunrise = (new CrontabJob())
-			->setMinutes($sunrise->format('i'))
-			->setHours($sunrise->format('H'))
-			->setDayOfMonth($sunrise->format('d'))
-			->setMonths($sunrise->format('n'))
-			->setDayOfWeek('*')
-			->setTaskCommandLine(sprintf($commandProto, 'light'))
-			->setComments('Toggle Dark -- Sunrise');
-
-		$cronJobSunset = (new CrontabJob())
-			->setMinutes($sunset->format('i'))
-			->setHours($sunset->format('H'))
-			->setDayOfMonth($sunset->format('d'))
-			->setMonths($sunset->format('n'))
-			->setDayOfWeek('*')
-			->setTaskCommandLine(sprintf($commandProto, 'dark'))
-			->setComments('Toggle Dark -- Sunset');
-
-		$cronJobCronUpdate = (new CrontabJob())
-			->setMinutes('*/15')
-			->setHours('*')
-			->setDayOfMonth('*')
-			->setMonths('*')
-			->setDayOfWeek('*')
-			->setTaskCommandLine(sprintf($commandProto, 'update'))
-			->setComments('Toggle Dark -- Update CRON jobs');
-
-		$this->uninstallCRON();
-
-		$crontabRepository = new CrontabRepository(new CrontabAdapter());
-		$crontabRepository->addJob($cronJobSunrise);
-		$crontabRepository->addJob($cronJobSunset);
-		$crontabRepository->addJob($cronJobCronUpdate);
-		$crontabRepository->persist();
-	}
-
-	/**
-	 * Uninstall the theme auto-switch CRON job
-	 *
-	 * @return  void
-	 * @since   1.0.0
-	 */
-	public function uninstallCRON(): void
-	{
-		$crontabRepository = new CrontabRepository(new CrontabAdapter());
-
-		foreach ($crontabRepository->findJobByRegex('/Toggle Dark -- /') as $job)
-		{
-			$crontabRepository->removeJob($job);
-		}
-
-		$crontabRepository->persist();
+		return $items['ColorScheme'] ?? '';
 	}
 
 	/**
@@ -217,7 +126,7 @@ class ToggleDark
 	 *
 	 * @return  string
 	 */
-	private function getBestTheme(): string
+	private function getBestScheme(): string
 	{
 		$coordinates = $this->getCoordinates();
 
@@ -235,13 +144,11 @@ class ToggleDark
 		if ($this->config->useCivicTwilight)
 		{
 			return $currentTime < $info['civil_twilight_begin'] || $currentTime > $info['civil_twilight_end']
-				? $this->config->darkTheme
-				: $this->config->lightTheme;
+				? $this->config->lightScheme : $this->config->darkScheme;
 		}
 
-		return $currentTime < $info['sunrise'] || $currentTime > $info['sunset']
-			? $this->config->darkTheme
-			: $this->config->lightTheme;
+		return $currentTime < $info['sunrise'] || $currentTime > $info['sunset'] ? $this->config->darkScheme
+			: $this->config->lightScheme;
 	}
 
 	/**
@@ -250,7 +157,7 @@ class ToggleDark
 	 * @return  array
 	 * @since   1.0.0
 	 */
-	#[\JetBrains\PhpStorm\ArrayShape([
+	#[ArrayShape([
 		"latitude"  => "float",
 		"longitude" => "float",
 	])]
@@ -391,106 +298,5 @@ INI;
 		}
 
 		return $myIp;
-	}
-
-	/**
-	 * Get a DateTimeZone object of the system's timezone.
-	 *
-	 * @return  DateTimeZone
-	 * @since   1.0.0
-	 */
-	private function getSystemTimezone(): DateTimeZone
-	{
-		// ATTEMPT #1 — The /etc/timezone file in Debian derivative distros
-		$file = '/etc/timezone';
-
-		if (file_exists($file) && is_file($file) && is_readable($file))
-		{
-			[$tz,] = explode("\n", file_get_contents($file), 2);
-
-			try
-			{
-				return new DateTimeZone($tz);
-			}
-			catch (\Exception $e)
-			{
-				// Don't do anything; fall through.
-			}
-		}
-
-		// ATTEMPT #2 — The date command
-		exec('date +"%z"', $out, $code);
-
-		if ($code === 0 && count($out))
-		{
-			try
-			{
-				return new DateTimeZone($out[0]);
-			}
-			catch (\Exception $e)
-			{
-				// Don't do anything; fall through.
-			}
-		}
-
-		// ATTEMPT #3 — PHP's timezone, or fallback to GMT
-		$tz = (function_exists('ini_get') ? ini_get('date.timezone') : '') ?: 'GMT';
-
-		try
-		{
-			return new DateTimeZone($tz);
-		}
-		catch (\Exception $e)
-		{
-			return new DateTimeZone('GMT');
-		}
-	}
-
-	/**
-	 * Get the sunrise and sunset time of a given day.
-	 *
-	 * @param   int|null  $targetTimestamp  The timestamp of the day we're interested in. NULL = today.
-	 *
-	 * @return  array
-	 */
-	private function getSunriseSunsetTime(?int $targetTimestamp = null): array
-	{
-		$coordinates = $this->getCoordinates();
-
-		/**
-		 * Extracted variables
-		 *
-		 * @var ?int $latitude  The latitude of the current location
-		 * @var ?int $longitude The longitude of the current location
-		 */
-		extract($coordinates);
-
-		if ($latitude === null || $longitude === null)
-		{
-			$latitude  = ini_get('date.default_latitude') ?: $this->config->defaultLat;
-			$longitude = ini_get('date.default_longitude') ?: $this->config->defaultLon;
-		}
-
-		// TODO Add/remove a fixed amount of time
-
-		$targetTimestamp  ??= time();
-		$info             = date_sun_info($targetTimestamp, $latitude, $longitude);
-		$sunriseTimestamp = $this->config->useCivicTwilight
-			? $info['civil_twilight_begin']
-			: $info['sunrise'];
-		$sunsetTimestamp  = $this->config->useCivicTwilight
-			? $info['civil_twilight_end']
-			: $info['sunset'];
-
-		// Creating DateTime objects from timestamps always uses the GMT timezone, regardless of the third argument.
-		$gmt     = new DateTimeZone('GMT');
-		$sunrise = \DateTime::createFromFormat('U', $sunriseTimestamp, $gmt);
-		$sunset  = \DateTime::createFromFormat('U', $sunsetTimestamp, $gmt);
-
-		// Force the DateTime objects to be expressed in the host's timezone
-		$sunrise->setTimezone($this->getSystemTimezone());
-		$sunset->setTimezone($this->getSystemTimezone());
-
-		return [$sunrise, $sunset];
 	}
 }
