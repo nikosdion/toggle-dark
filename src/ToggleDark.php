@@ -58,7 +58,7 @@ class ToggleDark
 			return false;
 		}
 
-		$command     = sprintf(
+		$command = sprintf(
 			'%s %s',
 			escapeshellcmd('/usr/bin/plasma-apply-colorscheme'),
 			escapeshellarg($bestScheme)
@@ -77,7 +77,7 @@ class ToggleDark
 	 */
 	public function forceDark(): void
 	{
-		$command     = sprintf(
+		$command = sprintf(
 			'%s %s',
 			escapeshellcmd('/usr/bin/plasma-apply-colorscheme'),
 			escapeshellarg($this->config->darkScheme)
@@ -96,7 +96,7 @@ class ToggleDark
 	 */
 	public function forceLight(): void
 	{
-		$command     = sprintf(
+		$command = sprintf(
 			'%s %s',
 			escapeshellcmd('/usr/bin/plasma-apply-colorscheme'),
 			escapeshellarg($this->config->lightScheme)
@@ -140,15 +140,11 @@ class ToggleDark
 
 		$currentTime = time();
 		$info        = date_sun_info($currentTime, $latitude, $longitude);
+		$startTime   = $this->config->useCivicTwilight ? $info['civil_twilight_begin'] : $info['sunrise'];
+		$endTime     = $this->config->useCivicTwilight ? $info['civil_twilight_end'] : $info['sunset'];
+		$isDaylight  = $currentTime >= $startTime && $currentTime <= $endTime;
 
-		if ($this->config->useCivicTwilight)
-		{
-			return $currentTime < $info['civil_twilight_begin'] || $currentTime > $info['civil_twilight_end']
-				? $this->config->lightScheme : $this->config->darkScheme;
-		}
-
-		return $currentTime < $info['sunrise'] || $currentTime > $info['sunset'] ? $this->config->darkScheme
-			: $this->config->lightScheme;
+		return $isDaylight ? $this->config->lightScheme : $this->config->darkScheme;
 	}
 
 	/**
