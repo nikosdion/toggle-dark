@@ -115,10 +115,25 @@ class ToggleDark
 	 */
 	private function getCurrentScheme(): string
 	{
-		$filePath = $_SERVER['HOME'] . '/.config/kdedefaults/kdeglobals';
-		$items    = @parse_ini_file($filePath, false) ?: [];
+		$cmd = escapeshellcmd('LC_ALL=C plasma-apply-colorscheme -l') . '|' . escapeshellcmd('grep current');
+		exec($cmd, $output);
 
-		return $items['ColorScheme'] ?? '';
+		if (empty($output))
+		{
+			return '';
+		}
+
+		$output = reset($output);
+
+		if (!str_starts_with($output, ' * '))
+		{
+			return '';
+		}
+
+		$output = ltrim($output, ' *');
+		[$scheme, ] = @explode('(current', $output, 2);
+
+		return $scheme ?: '';
 	}
 
 	/**
