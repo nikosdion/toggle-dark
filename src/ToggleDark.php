@@ -23,7 +23,9 @@
 
 namespace Dionysopoulos\ToggleDark;
 
+use DateTime;
 use JetBrains\PhpStorm\ArrayShape;
+use JetBrains\PhpStorm\ObjectShape;
 use JsonException;
 
 /**
@@ -59,9 +61,7 @@ class ToggleDark
 		}
 
 		$command = sprintf(
-			'%s %s',
-			escapeshellcmd('/usr/bin/plasma-apply-colorscheme'),
-			escapeshellarg($bestScheme)
+			'%s %s', escapeshellcmd('/usr/bin/plasma-apply-colorscheme'), escapeshellarg($bestScheme)
 		);
 
 		exec($command);
@@ -78,9 +78,7 @@ class ToggleDark
 	public function forceDark(): void
 	{
 		$command = sprintf(
-			'%s %s',
-			escapeshellcmd('/usr/bin/plasma-apply-colorscheme'),
-			escapeshellarg($this->config->darkScheme)
+			'%s %s', escapeshellcmd('/usr/bin/plasma-apply-colorscheme'), escapeshellarg($this->config->darkScheme)
 		);
 
 		exec($command);
@@ -97,14 +95,87 @@ class ToggleDark
 	public function forceLight(): void
 	{
 		$command = sprintf(
-			'%s %s',
-			escapeshellcmd('/usr/bin/plasma-apply-colorscheme'),
-			escapeshellarg($this->config->lightScheme)
+			'%s %s', escapeshellcmd('/usr/bin/plasma-apply-colorscheme'), escapeshellarg($this->config->lightScheme)
 		);
 
 		exec($command);
 
 		exec('gsettings set org.gnome.desktop.interface color-scheme \'prefer-light\'');
+	}
+
+	/**
+	 * Returns the start and end times of the daytime, and whether it is currently daylight or not
+	 *
+	 * @return  object  An object with the following properties:
+	 *                  - start: \DateTime object representing the start time of the daytime
+	 *                  - end: \DateTime object representing the end time of the daytime
+	 *                  - isDaylight: boolean indicating whether it is currently daylight or not
+	 * @since   2.0.0
+	 */
+	#[ObjectShape([
+		'start'      => DateTime::class,
+		'end'        => DateTime::class,
+		'isDaylight' => 'bool',
+	])]
+	public function getDaytimeLimits(): object
+	{
+		$coordinates = $this->getCoordinates();
+
+		extract($coordinates);
+
+		if ($latitude === null || $longitude === null)
+		{
+			$latitude  = ini_get('date.default_latitude') ?: $this->config->defaultLat;
+			$longitude = ini_get('date.default_longitude') ?: $this->config->defaultLon;
+		}
+
+		$currentTime = time();
+		$info        = date_sun_info($currentTime, $latitude, $longitude);
+		$startTime   = $this->config->useCivicTwilight ? $info['civil_twilight_begin'] : $info['sunrise'];
+		$endTime     = $this->config->useCivicTwilight ? $info['civil_twilight_end'] : $info['sunset'];
+		$isDaylight  = $currentTime >= $startTime && $currentTime <= $endTime;
+
+		return (object) [
+			'start'      => new DateTime('@' . $startTime),
+			'end'        => new DateTime('@' . $endTime),
+			'isDaylight' => $isDaylight,
+		];
+	}
+
+	/**
+	 * Returns the name of the current timezone based on the system's date settings
+	 *
+	 * @return  string
+	 *
+	 * @since   2.0.0
+	 */
+	public function getTimezone(): string
+	{
+		$cmd = escapeshellcmd('date +"%Z"');
+		exec($cmd, $output, $code);
+
+		if (empty($output) || !count($output) || $code !== 0)
+		{
+			return 'GMT';
+		}
+
+		$tzName = trim(reset($output));
+
+		if (empty($tzName))
+		{
+			return 'GMT';
+		}
+
+		try
+		{
+			new \DateTimeZone($tzName);
+
+			return $tzName;
+		}
+		catch (\Exception $e)
+		{
+			return 'GMT';
+		}
 	}
 
 	/**
@@ -131,7 +202,7 @@ class ToggleDark
 		}
 
 		$output = ltrim($output, ' *');
-		[$scheme, ] = @explode('(current', $output, 2);
+		[$scheme,] = @explode(' (current', $output, 2);
 
 		return $scheme ?: '';
 	}
@@ -143,23 +214,9 @@ class ToggleDark
 	 */
 	private function getBestScheme(): string
 	{
-		$coordinates = $this->getCoordinates();
+		$limits = $this->getDaytimeLimits();
 
-		extract($coordinates);
-
-		if ($latitude === null || $longitude === null)
-		{
-			$latitude  = ini_get('date.default_latitude') ?: $this->config->defaultLat;
-			$longitude = ini_get('date.default_longitude') ?: $this->config->defaultLon;
-		}
-
-		$currentTime = time();
-		$info        = date_sun_info($currentTime, $latitude, $longitude);
-		$startTime   = $this->config->useCivicTwilight ? $info['civil_twilight_begin'] : $info['sunrise'];
-		$endTime     = $this->config->useCivicTwilight ? $info['civil_twilight_end'] : $info['sunset'];
-		$isDaylight  = $currentTime >= $startTime && $currentTime <= $endTime;
-
-		return $isDaylight ? $this->config->lightScheme : $this->config->darkScheme;
+		return $limits->isDaylight ? $this->config->lightScheme : $this->config->darkScheme;
 	}
 
 	/**
