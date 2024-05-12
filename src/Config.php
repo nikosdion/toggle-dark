@@ -20,6 +20,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
+
 namespace Dionysopoulos\ToggleDark;
 
 /**
@@ -29,6 +30,8 @@ namespace Dionysopoulos\ToggleDark;
  * @property string $lightScheme      Light KDE colour scheme theme identifier
  * @property bool   $useGeoIP         Should I use GeoIP?
  * @property int    $cacheLifetime    Cache lifetime for GeoIP, in hours
+ * @property int    $lightOffset      Apply light theme offset, in minutes
+ * @property int    $darkOffset       Apply dark theme offset, in minutes
  * @property float  $defaultLon       Default longitude
  * @property float  $defaultLat       Default latitude
  * @property bool   $useCivicTwilight Should I use the civic twilight instead of sunrise / sunset?
@@ -37,6 +40,8 @@ namespace Dionysopoulos\ToggleDark;
  */
 class Config
 {
+	private const CONFIG_FILE = 'toggle-dark';
+
 	private bool $useGeoIP = true;
 
 	private float $defaultLon = 23.7353;
@@ -51,7 +56,9 @@ class Config
 
 	private int $cacheLifetime = 6;
 
-	private const CONFIG_FILE = 'toggle-dark';
+	private int $lightOffset = 0;
+
+	private int $darkOffset = 0;
 
 	public function __construct()
 	{
@@ -80,8 +87,10 @@ class Config
 		$this->defaultLon       = floatval($config['longitude'] ?? $this->defaultLon);
 		$this->defaultLat       = floatval($config['latitude'] ?? $this->defaultLat);
 		$this->useCivicTwilight = boolval($config['civic_twilight'] ?? $this->useCivicTwilight);
-		$this->darkScheme        = $config['dark_scheme'] ?? $this->darkScheme;
-		$this->lightScheme       = $config['light_scheme'] ?? $this->lightScheme;
+		$this->lightOffset      = intval($config['light_offset'] ?? $this->lightOffset);
+		$this->darkOffset       = intval($config['dark_offset'] ?? $this->darkOffset);
+		$this->darkScheme       = $config['dark_scheme'] ?? $this->darkScheme;
+		$this->lightScheme      = $config['light_scheme'] ?? $this->lightScheme;
 		$this->cacheLifetime    = $config['cache_lifetime'] ?? $this->cacheLifetime;
 	}
 
@@ -95,6 +104,8 @@ dark_scheme={$this->darkScheme}
 light_scheme={$this->lightScheme}
 geoip={$geoIP}
 cache_lifetime={$this->cacheLifetime}
+light_offset={$this->lightOffset}
+dark_offset={$this->darkOffset}
 longitude={$this->defaultLon}
 latitude={$this->defaultLat}
 civic_twilight={$civicTwilight}

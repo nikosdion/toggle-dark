@@ -1,6 +1,6 @@
 # Toggle Dark
 
-Automatically toggle between a dark and light KDE Plasma global theme.
+Automatically toggle between a dark and light KDE Plasma 5 or 6 color scheme.
 
 [Download](https://github.com/nikosdion/toggle-dark/releases/latest) • [Issues](https://github.com/nikosdion/toggle-dark/issues)
 
@@ -12,7 +12,7 @@ chown +x toggle-dark.phar
 sudo cp toggle-dark.phar /usr/local/bin/toggle-dark
 ```
 
-This does not take into account two use cases where a toggle between the dark and light theme is necessary:
+This does not take into account two use cases where a toggle between the dark and light colour scheme is necessary:
 
 * Suspending your computer after sunset and resuming it after dawn (or suspending after dawn and resuming after sunset).
 * Suspending your computer between noon and midnight and resuming it after dawn.
@@ -32,11 +32,11 @@ To address these problems you need to have the Toggle Dark update to run on Plas
 * Click on OK
 * Click on Apply
 
-This will allow the dark/light theme to toggle even in the two use cases explained above.
+This will allow the dark/light colour scheme to toggle even in the two use cases explained above.
 
 ## Usage
 
-This tool can be used to toggle between a Light and Dark KDE Plasma colour theme based on the sunrise and sunset.
+This tool can be used to toggle between a Light and Dark KDE Plasma colour scheme based on the sunrise and sunset.
 
 By default, it uses the Breeze Light and Breeze Dark colour schemes shipped with KDE Plasma. The sunrise and sunset is calculated based on your approximate position, as determined by your public IP address. Your colour scheme switches to Light mode after the civil dawn (which is a few minutes before the sun's disk appears over the horizon) and to Dark Mode after the civil dusk (which is a few minutes after the sun's disk disappears over the horizon). You can change this behaviour through the [configuration file `~/.config/toggle-dark`](#configuration).
 
@@ -58,7 +58,7 @@ toggle-dark dark
 
 ### Semi-automatic switching
 
-To switch to the Light or Dark theme according to the sunrise and sunset times just run:
+To switch to the Light or Dark colour scheme according to the sunrise and sunset times just run:
 
 ```bash
 toggle-dark autotoggle
@@ -87,14 +87,14 @@ Set up a CRON job which runs every minute using `crontab -e` like so:
 
 Toggle Dark uses an INI-format configuration file, `~/.config/toggle-dark`. The file is created if it does not exist.
 
-### Theme configuration
+### Colour scheme configuration
 
 ```ini
 dark_scheme=BreezeDark
 light_scheme=BreezeLight
 ```
 
-The first two configuration options need the identifier of an installed colour theme. You can list these identifiers with `plasma-apply-colorscheme -l`.
+The first two configuration options need the identifier of an installed colour scheme. You can list these identifiers with `plasma-apply-colorscheme -l`.
 
 ### Geography
 
@@ -115,16 +115,22 @@ If you'd rather not use any third party service you can set `geoip=0` and set up
 
 ```ini
 civic_twilight=1
+light_offset=0
+dark_offset=0
 ```
 
 When `civic_twilight` is set to 1, Toggle Dark will use the [civil dawn and civil dusk](https://www.timeanddate.com/astronomy/civil-twilight.html) to determine when to switch between the Light and Dark colour schemes. The Light colour scheme is applied before the Sun's disk appears over the horizon and Dark colour scheme is applied after the Sun's disk disappears below the horizon. This is on purpose, as in most location's there's enough light during these two civic twilight phases for people to still call it “daytime”. The amount of time spent in these two twilight phases depends on the time of year and your latitude.
 
 When `civic_twilight` is set to 0, Toggle Dark will use the actual sunrise and sunset time, i.e. when the geometric centre of the Sun's disk crosses the horizon. This may be desirable if you live close to big hills, mountains, or tall buildings which block much of the twilight.
 
+When `light_offset` is greater than zero, the light colour scheme will be applied this many minutes _after_ the sunrise / civil dawn time. When it's less than zero, the light colour scheme will be applied this many minutes _before_ the sunrise / civil dawn time. Generally, you need to use positive values to take into account the shading from tall structures, nearby hills etc.
+
+When `dark_offset` is greater than zero, the dark colour scheme will be applied this many minutes _after_ the sunset / civil dusk time. When it's less than zero, the dark colour scheme will be applied this many minutes _after_ the sunrise / civil dawn time. Generally, you need to use negative values to take into account the shading from tall structures, nearby hills etc.
+
 ## Requirements
 
 * Linux, *BSD, or compatible Operating System
-* KDE Plasma desktop, version 5
+* KDE Plasma desktop, version 5 or 6
 * PHP 8.0 or later
 
 On Debian derivatives (e.g. Kubuntu, KDE Neon, Tuxedo OS, …) you can install the required PHP packages with:
@@ -171,6 +177,14 @@ sudo cp release/toggle-dark.phar /usr/local/bin/toggle-dark
 
 ## Preemptively Answered Questions
 
+### Why do you change the colour scheme, instead of the global theme?
+
+It's very simple for any user to create a new colour scheme in KDE Plasma 5 and 6. It is a far more difficult task creating a new global theme. As a result, changing global themes instead of colour schemes would be a pain for most users, as it would reset their desktop backgrounds, icons, window decorations etc. 
+
+The power of KDE Plasma is that you can use all those extra personalisation items to skin it so thoroughly it might look near darned identical to a different OS (e.g. Windows, macOS, ...), or even give it a completely new look (there are so many cyberpunk, goth, etc examples).
+
+Asking users to learn how to create global themes to maintain this kind of deep customisation while toggling between light and dark mode was an overkill, which is why version 2 stopped switching global themes, and decided to stick with colour schemes instead. Not to mention that changing the global theme was oftentimes buggy, especially with regard to switching the Gtk theme, which is what most Linux desktop applications (e.g. browsers) look for when determining if they're running on Dark Mode.   
+
 ### Can I change the global theme?
 
 No. This is what version 1 was doing, but sometimes the changeover was finicky, resulting in some Gtk application not switching over correctly.
@@ -184,7 +198,7 @@ KDE Plasma supports wallpapers which change automatically between a light and da
 ## Copyright and license statement
 Toggle Dark — Automatically toggle between a dark and light KDE Plasma global theme.
 
-Copyright (C) 2023  Nicholas K. Dionysopoulos
+Copyright (C) 2023-2024  Nicholas K. Dionysopoulos
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by

@@ -133,7 +133,18 @@ class ToggleDark
 		$info        = date_sun_info($currentTime, $latitude, $longitude);
 		$startTime   = $this->config->useCivicTwilight ? $info['civil_twilight_begin'] : $info['sunrise'];
 		$endTime     = $this->config->useCivicTwilight ? $info['civil_twilight_end'] : $info['sunset'];
-		$isDaylight  = $currentTime >= $startTime && $currentTime <= $endTime;
+
+		if ($this->config->lightOffset)
+		{
+			$startTime += 60 * $this->config->lightOffset;
+		}
+
+		if ($this->config->darkOffset)
+		{
+			$endTime += 60 * $this->config->darkOffset;
+		}
+
+		$isDaylight = $currentTime >= $startTime && $currentTime <= $endTime;
 
 		return (object) [
 			'start'      => new DateTime('@' . $startTime),
