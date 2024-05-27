@@ -50,9 +50,9 @@ class Config
 
 	private bool $useCivicTwilight = true;
 
-	private string $darkScheme = 'BreezeLight';
+	private string $darkScheme = 'BreezeDark';
 
-	private string $lightScheme = 'BreezeDark';
+	private string $lightScheme = 'BreezeLight';
 
 	private int $cacheLifetime = 6;
 
