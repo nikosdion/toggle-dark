@@ -56,6 +56,13 @@ To forcibly apply the Dark colour scheme:
 toggle-dark dark
 ```
 
+If you want to toggle from Light to Dark, or vice versa:
+```bash
+toggle-dark toggle
+```
+
+> ℹ️ **Tip**: You can create a shortcut to toggle the colour scheme manually. Go to System Settings, Keyboard, Shortcuts, Add New, Command or Script. Enter `/usr/local/bin/toggle-dark` as the command. I recommend using an easy to remember shortcut, e.g. CTRL-SHIFT-Monitor Brightness Down.
+
 ### Semi-automatic switching
 
 To switch to the Light or Dark colour scheme according to the sunrise and sunset times just run:
@@ -78,10 +85,16 @@ Having to run a command manually is a pain, and only marginally better than doin
 
 Toggle Dark supports a fully automated switching mode using CRON jobs.
 
+> ‼️ **WARNING**: Most distributions with newer versions of systemd (e.g. Ubuntu and derivatives) come with the CRON daemon _disabled_ by default. You will need to run `sudo apt install cron; sudo systemctl enable --now cron.service` to enable the CRON daemon.
+
 Set up a CRON job which runs every minute using `crontab -e` like so:
 ```cronexp
 * * * * * /usr/bin/php8.2 /usr/local/bin/toggle-dark 1>/dev/null
 ```
+
+Please note that having this CRON job enabled will cause the colour scheme to toggle automatically every minute. If you are trying to force the colour scheme to stay Light or Dark it will appear to not work. The CRON job would be why.
+
+Alternatively, use `toggle-dark update` to install three CRON jobs which toggle the theme on sunrise and sundown, and one which updates these CRON jobs every 3 hours (necessary because the sunrise and sundown time changes each day of the year).
 
 ## Configuration
 
@@ -107,9 +120,11 @@ latitude=37.9842
 
 Toggle Dark needs to know where you physically are to calculate the correct sunrise and sunset time.
 
-When `geoip=1` it will use the third party GeoIP service ip-api.com. Moreover, it will cache your location in the file `~/.config/toggle-dark.cache` along with your external IP address for the number of hours specified in the `cache_lifetime` setting. After this many hours, it will check your external IP address using the third party checkip.amazonaws.com service. If your IP has changed, it will retrieve your location again from the GeoIP service.
+When `geoip=1` Toggle Dark will be doing two network requests. One is to `checkip.amazonaws.com` to get your external IP address, and one to `ip-api.com` to determine your longitude and latitude (geographic coordinates). The geographic coordinates are used to determine the sunrise and sunset time. After `cache_lifetime` hours it will contact `checkip.amazonaws.com` again to check your IP address. If it has changed it will contact `ip-api.com` again.
 
-If you'd rather not use any third party service you can set `geoip=0` and set up your location's longitude and latitude as decimal degrees. Longitude is positive in the Eastern hemisphere and negative in the Western hemisphere. Latitude is positive in the North hemisphere and negative in the South hemisphere.
+If you'd rather not use any third party service –and completely prevent network access– you can set `geoip=0` and set up your location's longitude and latitude as decimal degrees. Longitude is positive in the Eastern hemisphere and negative in the Western hemisphere. Latitude is positive in the North hemisphere and negative in the South hemisphere.
+
+> ℹ️ **Tip**: You can find these coordinates by searching “<city name> longitude latitude” in any search engine, or by consulting a GPS device. Remember to use decimal degress, NOT degrees-minutes-seconds.
 
 ### Sunset and sunrise calculation
 
@@ -121,11 +136,13 @@ dark_offset=0
 
 When `civic_twilight` is set to 1, Toggle Dark will use the [civil dawn and civil dusk](https://www.timeanddate.com/astronomy/civil-twilight.html) to determine when to switch between the Light and Dark colour schemes. The Light colour scheme is applied before the Sun's disk appears over the horizon and Dark colour scheme is applied after the Sun's disk disappears below the horizon. This is on purpose, as in most location's there's enough light during these two civic twilight phases for people to still call it “daytime”. The amount of time spent in these two twilight phases depends on the time of year and your latitude.
 
-When `civic_twilight` is set to 0, Toggle Dark will use the actual sunrise and sunset time, i.e. when the geometric centre of the Sun's disk crosses the horizon. This may be desirable if you live close to big hills, mountains, or tall buildings which block much of the twilight.
+When `civic_twilight` is set to 0, Toggle Dark will use the actual sunrise and sunset time, i.e. when the geometric centre of the Sun's disk crosses the horizon. This may not be desirable if you live close to big hills, mountains, or tall buildings which block much of the twilight.
 
 When `light_offset` is greater than zero, the light colour scheme will be applied this many minutes _after_ the sunrise / civil dawn time. When it's less than zero, the light colour scheme will be applied this many minutes _before_ the sunrise / civil dawn time. Generally, you need to use positive values to take into account the shading from tall structures, nearby hills etc.
 
 When `dark_offset` is greater than zero, the dark colour scheme will be applied this many minutes _after_ the sunset / civil dusk time. When it's less than zero, the dark colour scheme will be applied this many minutes _after_ the sunrise / civil dawn time. Generally, you need to use negative values to take into account the shading from tall structures, nearby hills etc.
+
+Rule of thumb: I have found that living in a city surrounded by low hills and 6-storey buildings I have best results using `civic_twilight=1`, `light_offset=15`, and `dark_offset=-20`. 
 
 ## Requirements
 
@@ -183,11 +200,11 @@ It's very simple for any user to create a new colour scheme in KDE Plasma 5 and 
 
 The power of KDE Plasma is that you can use all those extra personalisation items to skin it so thoroughly it might look near darned identical to a different OS (e.g. Windows, macOS, ...), or even give it a completely new look (there are so many cyberpunk, goth, etc examples).
 
-Asking users to learn how to create global themes to maintain this kind of deep customisation while toggling between light and dark mode was an overkill, which is why version 2 stopped switching global themes, and decided to stick with colour schemes instead. Not to mention that changing the global theme was oftentimes buggy, especially with regard to switching the Gtk theme, which is what most Linux desktop applications (e.g. browsers) look for when determining if they're running on Dark Mode.   
+Asking users to learn how to create global themes to maintain this kind of deep customisation while toggling between light and dark mode was an overkill, which is why we are not switching global themes, and decided to stick with colour schemes instead. Not to mention that changing the global theme was oftentimes buggy, especially with regard to switching the Gtk theme, which is what most Linux desktop applications (e.g. browsers) look for when determining if they're running on Dark Mode.
 
 ### Can I change the global theme?
 
-No. This is what version 1 was doing, but sometimes the changeover was finicky, resulting in some Gtk application not switching over correctly.
+Nope. I tried that, but sometimes the changeover was finicky, resulting in some Gtk application not switching over correctly.
 
 ### Why does the wallpaper not change?
 
@@ -196,9 +213,10 @@ Because we are only changing the colour theme.
 KDE Plasma supports wallpapers which change automatically between a light and dark theme, e.g. the built-in Flow wallpaper. This is the best way to have the wallpaper change automatically.
 
 ## Copyright and license statement
+
 Toggle Dark — Automatically toggle between a dark and light KDE Plasma global theme.
 
-Copyright (C) 2023-2024  Nicholas K. Dionysopoulos
+Copyright (C) 2023-2024 Nicholas K. Dionysopoulos
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
