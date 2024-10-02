@@ -61,7 +61,9 @@ class ToggleDark
 		}
 
 		$command = sprintf(
-			'%s %s', escapeshellcmd('/usr/bin/plasma-apply-colorscheme'), escapeshellarg($bestScheme)
+			'%s --platform offscreen %s',
+			escapeshellcmd('/usr/bin/plasma-apply-colorscheme'),
+			escapeshellarg($bestScheme)
 		);
 
 		exec($command);
@@ -78,7 +80,9 @@ class ToggleDark
 	public function forceDark(): void
 	{
 		$command = sprintf(
-			'%s %s', escapeshellcmd('/usr/bin/plasma-apply-colorscheme'), escapeshellarg($this->config->darkScheme)
+			'%s --platform offscreen %s',
+			escapeshellcmd('/usr/bin/plasma-apply-colorscheme'),
+			escapeshellarg($this->config->darkScheme)
 		);
 
 		exec($command);
@@ -95,7 +99,9 @@ class ToggleDark
 	public function forceLight(): void
 	{
 		$command = sprintf(
-			'%s %s', escapeshellcmd('/usr/bin/plasma-apply-colorscheme'), escapeshellarg($this->config->lightScheme)
+			'%s --platform offscreen %s',
+			escapeshellcmd('/usr/bin/plasma-apply-colorscheme'),
+			escapeshellarg($this->config->lightScheme)
 		);
 
 		exec($command);
@@ -197,7 +203,7 @@ class ToggleDark
 	 */
 	private function getCurrentScheme(): string
 	{
-		$cmd = escapeshellcmd('LC_ALL=C plasma-apply-colorscheme -l') . '|' . escapeshellcmd('grep current');
+		$cmd = escapeshellcmd('LC_ALL=C plasma-apply-colorscheme --platform offscreen -l') . '|' . escapeshellcmd('grep current');
 		exec($cmd, $output);
 
 		if (empty($output))
