@@ -4,8 +4,8 @@
  * @copyright Copyright (c) 2023 Nicholas K. Dionysopoulos
  * @license   GPLv3+
  *
- * Toggle Dark — Automatically toggle between a dark and light KDE Plasma global theme.
- * Copyright (C) 2023  Nicholas K. Dionysopoulos
+ * Toggle Dark — Automatically toggle between a dark and light KDE Plasma colour scheme.
+ * Copyright (C) 2023-2024 Nicholas K. Dionysopoulos
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -27,6 +27,9 @@ use DateTime;
 use JetBrains\PhpStorm\ArrayShape;
 use JetBrains\PhpStorm\ObjectShape;
 use JsonException;
+use TiBeN\CrontabManager\CrontabAdapter;
+use TiBeN\CrontabManager\CrontabJob;
+use TiBeN\CrontabManager\CrontabRepository;
 
 /**
  * KDE Plasma Light / Dark Mode Toggle
@@ -45,12 +48,12 @@ class ToggleDark
 	}
 
 	/**
-	 * Toggle the Plasma theme, if necessary
+	 * Toggle the Plasma colour scheme, if necessary
 	 *
-	 * @return  bool  True if switching themes took place
+	 * @return  bool  True if switching colour schemes took place
 	 * @since   1.0.0
 	 */
-	public function autoToggleTheme(): bool
+	public function autoToggleScheme(): bool
 	{
 		$currentScheme = $this->getCurrentScheme();
 		$bestScheme    = $this->getBestScheme();
@@ -61,8 +64,7 @@ class ToggleDark
 		}
 
 		$command = sprintf(
-			'%s --platform offscreen %s',
-			escapeshellcmd('/usr/bin/plasma-apply-colorscheme'),
+			'%s --platform offscreen %s', escapeshellcmd('/usr/bin/plasma-apply-colorscheme'),
 			escapeshellarg($bestScheme)
 		);
 
@@ -72,7 +74,29 @@ class ToggleDark
 	}
 
 	/**
-	 * Apply the dark theme
+	 * Toggle the Plasma colour scheme, always
+	 *
+	 * @return  void
+	 * @since   1.0.0
+	 */
+	public function toggleScheme(): void
+	{
+		$currentScheme    = $this->getCurrentScheme();
+		$isCurrerntlyDark = $currentScheme === $this->config->darkScheme;
+
+		if ($isCurrerntlyDark)
+		{
+			$this->forceLight();
+		}
+		else
+		{
+			$this->forceDark();
+		}
+	}
+
+
+	/**
+	 * Apply the dark colour scheme
 	 *
 	 * @return  void
 	 * @since   1.0.0
@@ -80,8 +104,7 @@ class ToggleDark
 	public function forceDark(): void
 	{
 		$command = sprintf(
-			'%s --platform offscreen %s',
-			escapeshellcmd('/usr/bin/plasma-apply-colorscheme'),
+			'%s --platform offscreen %s', escapeshellcmd('/usr/bin/plasma-apply-colorscheme'),
 			escapeshellarg($this->config->darkScheme)
 		);
 
@@ -91,7 +114,7 @@ class ToggleDark
 	}
 
 	/**
-	 * Apply the light theme
+	 * Apply the light colour scheme
 	 *
 	 * @return  void
 	 * @since   1.0.0
@@ -99,8 +122,7 @@ class ToggleDark
 	public function forceLight(): void
 	{
 		$command = sprintf(
-			'%s --platform offscreen %s',
-			escapeshellcmd('/usr/bin/plasma-apply-colorscheme'),
+			'%s --platform offscreen %s', escapeshellcmd('/usr/bin/plasma-apply-colorscheme'),
 			escapeshellarg($this->config->lightScheme)
 		);
 
@@ -196,14 +218,81 @@ class ToggleDark
 	}
 
 	/**
+	 * Update the colour scheme auto-switch CRON job
+	 *
+	 * @return  void
+	 * @since   1.0.0
+	 */
+	public function updateCRON(): void
+	{
+		$dayTimeLimits = $this->getDaytimeLimits();
+		$sunrise       = $dayTimeLimits->start;
+		$sunset        = $dayTimeLimits->end;
+
+		$commandProto = PHP_BINARY . ' ' . TOGGLE_DARK_SELF . ' %s';
+
+		$cronJobSunrise = (new CrontabJob())->setMinutes($sunrise->format('i'))
+			->setHours($sunrise->format('H'))
+			->setDayOfMonth($sunrise->format('d'))
+			->setMonths($sunrise->format('n'))
+			->setDayOfWeek('*')
+			->setTaskCommandLine(sprintf($commandProto, 'light'))
+			->setComments('Toggle Dark -- Sunrise');
+
+		$cronJobSunset = (new CrontabJob())->setMinutes($sunset->format('i'))
+			->setHours($sunset->format('H'))
+			->setDayOfMonth($sunset->format('d'))
+			->setMonths($sunset->format('n'))
+			->setDayOfWeek('*')
+			->setTaskCommandLine(sprintf($commandProto, 'dark'))
+			->setComments('Toggle Dark -- Sunset');
+
+		$cronJobCronUpdate = (new CrontabJob())->setMinutes('0')
+			->setHours('*/4')
+			->setDayOfMonth('*')
+			->setMonths('*')
+			->setDayOfWeek('*')
+			->setTaskCommandLine(sprintf($commandProto, 'update'))
+			->setComments('Toggle Dark -- Update CRON jobs');
+
+		$this->uninstallCRON();
+
+		$crontabRepository = new CrontabRepository(new CrontabAdapter());
+		$crontabRepository->addJob($cronJobSunrise);
+		$crontabRepository->addJob($cronJobSunset);
+		$crontabRepository->addJob($cronJobCronUpdate);
+		$crontabRepository->persist();
+	}
+
+	/**
+	 * Uninstall the colour scheme auto-switch CRON job
+	 *
+	 * @return  void
+	 * @since   1.0.0
+	 */
+	public function uninstallCRON(): void
+	{
+		$crontabRepository = new CrontabRepository(new CrontabAdapter());
+
+		foreach ($crontabRepository->findJobByRegex('/Toggle Dark -- /') as $job)
+		{
+			$crontabRepository->removeJob($job);
+		}
+
+		$crontabRepository->persist();
+	}
+
+	/**
 	 * Returns the name of the currently active Plasma colour scheme
 	 *
 	 * @return  string
 	 * @since   1.0.0
 	 */
-	private function getCurrentScheme(): string
+	public function getCurrentScheme(): string
 	{
-		$cmd = escapeshellcmd('LC_ALL=C plasma-apply-colorscheme --platform offscreen -l') . '|' . escapeshellcmd('grep current');
+		$cmd = escapeshellcmd('LC_ALL=C plasma-apply-colorscheme --platform offscreen -l') . '|' . escapeshellcmd(
+				'grep current'
+			);
 		exec($cmd, $output);
 
 		if (empty($output))
@@ -225,7 +314,7 @@ class ToggleDark
 	}
 
 	/**
-	 * Returns the identifier of the best applicable theme (light or dark), based on sunrise/sunset info.
+	 * Returns the identifier of the best applicable colour scheme (light or dark), based on sunrise/sunset info.
 	 *
 	 * @return  string
 	 */

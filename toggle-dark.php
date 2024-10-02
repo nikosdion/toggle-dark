@@ -26,7 +26,7 @@ $app->command(
 			)
 		);
 
-		$toggled = $toggleDark->autoToggleTheme();
+		$toggled = $toggleDark->autoToggleScheme();
 
 		if ($toggled)
 		{
@@ -37,21 +37,56 @@ $app->command(
 
 		$ioStyle->warning('No need to toggle the Plasma colour scheme.');
 	}
-)->descriptions('Toggle dark/light global theme based on sunrise/sunset');
+)->descriptions('Toggle dark/light colour scheme based on sunrise/sunset');
+
+$app->command(
+	'toggle',
+	function (OutputInterface $output) {
+		(new ToggleDark())->toggleScheme();
+	}
+)->descriptions('Toggle between the dark and light colour scheme');
 
 $app->command(
 	'dark',
 	function (OutputInterface $output) {
 		(new ToggleDark())->forceDark();
 	}
-)->descriptions('Applies the dark theme');
+)->descriptions('Applies the dark colour scheme');
 
 $app->command(
 	'light',
 	function (OutputInterface $output) {
 		(new ToggleDark())->forceLight();
 	}
-)->descriptions('Applies the light theme');
+)->descriptions('Applies the light colour scheme');
+
+$app->command(
+	'current',
+	function (OutputInterface $output) {
+		$current = (new ToggleDark())->getCurrentScheme();
+
+		$output->writeln($current);
+	}
+)->descriptions('Print the current colour scheme identifier');
+
+$app->command(
+	'update',
+	function (OutputInterface $output) {
+		$toggleDark = new ToggleDark();
+		$toggleDark->updateCRON();
+		$toggleDark->autoToggleScheme();
+		$output->writeln('Updated CRON jobs.');
+	}
+)->descriptions('Install or update the CRON jobs to auto-switch the colour scheme');
+
+$app->command(
+	'uninstall',
+	function (OutputInterface $output) {
+		(new ToggleDark())->uninstallCRON();
+		$output->writeln('Removed CRON jobs.');
+	}
+)->descriptions('Remove the CRON jobs to auto-switch the colour scheme');
+
 
 call_user_func(
 	function () {
