@@ -1,3 +1,8 @@
+## NO LONGER MAINTAINED
+
+> [!WARNING]  
+> This software is no longer maintained. I recommend using [Darkman](https://gitlab.com/WhyNotHugo/darkman/) instead.
+
 # Toggle Dark
 
 Automatically toggle between a dark and light KDE Plasma 5 or 6 color scheme.
